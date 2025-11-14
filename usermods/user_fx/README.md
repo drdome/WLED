@@ -14,6 +14,13 @@ Multiple Effects can be specified inside this single usermod, as we will illustr
 * [Change Log](./README.md#change-log)
 * [Contact Us](./README.md#contact-us)
 
+## Included Effects
+
+- **Diffusion Fire** – 2D fire simulation tuned for small matrices.
+- **Chase Race** – 1D three-car racing effect (controls: Pace, Car length, Gap size, plus the three color slots).
+
+Enable the `user_fx` usermod via `custom_usermods = user_fx` and `-D USERMOD_USER_FX` to make these effects available. You can keep adding your own effects to this file as described below.
+
 ## How The Usermod Works
 
 The `user_fx.cpp` file can be broken down into four main parts:

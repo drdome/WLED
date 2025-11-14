@@ -88,6 +88,66 @@ unsigned dataSize = cols * rows;  // SEGLEN (virtual length) is equivalent to vW
 }
 static const char _data_FX_MODE_DIFFUSIONFIRE[] PROGMEM = "Diffusion Fire@!,Spark rate,Diffusion Speed,Turbulence,,Use palette;;Color;;2;pal=35";
 
+// Chase Race effect (1D) - three cars with configurable pace, length, gap
+static uint16_t mode_chase_race(void) {
+  const uint16_t segLen = SEGLEN;
+  if (!segLen) return FRAMETIME;
+
+  if (SEGENV.call == 0) {
+    SEGENV.step = strip.now;
+    SEGENV.aux0 = 0; // head position
+  }
+
+  const uint16_t minInterval = 10;
+  const uint16_t maxInterval = 180;
+  const uint16_t interval = maxInterval - ((maxInterval - minInterval) * SEGMENT.speed / 255);
+
+  if (strip.now - SEGENV.step >= interval) {
+    SEGENV.step = strip.now;
+    SEGENV.aux0 = (SEGENV.aux0 + 1) % segLen;
+  }
+
+  uint16_t carLenMax = 1;
+  if (segLen > 3) {
+    carLenMax = max<uint16_t>(1, (segLen - 3) / 3);
+  }
+  carLenMax = max<uint16_t>(1, min<uint16_t>(carLenMax, segLen));
+
+  uint16_t carLen = map(SEGMENT.intensity, 0, 255, 1, carLenMax);
+  carLen = max<uint16_t>(1, min<uint16_t>(carLen, carLenMax));
+
+  uint16_t maxGap = 0;
+  if (segLen > carLen * 3) {
+    maxGap = (segLen - (carLen * 3)) / 3;
+  }
+
+  uint16_t desiredGap = map(SEGMENT.custom1, 0, 255, 1, max<uint16_t>(1, segLen / 3));
+  uint16_t gapLen = (maxGap == 0)
+                      ? 0
+                      : max<uint16_t>(1, min<uint16_t>(desiredGap, maxGap));
+
+  const uint16_t spacing = carLen + gapLen;
+  const uint16_t origin = SEGENV.aux0 % segLen;
+
+  SEGMENT.fill(BLACK);
+
+  auto drawCar = [&](uint16_t start, uint32_t color) {
+    if (!color) return;
+    for (uint16_t i = 0; i < carLen && i < segLen; i++) {
+      uint16_t idx = (start + i) % segLen;
+      SEGMENT.setPixelColor(idx, color);
+    }
+  };
+
+  // Colors map to UI slots 1-3, but SEGCOLOR indices are reversed
+  drawCar(origin, SEGCOLOR(2));
+  drawCar((origin + spacing) % segLen, SEGCOLOR(1));
+  drawCar((origin + (2 * spacing)) % segLen, SEGCOLOR(0));
+
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_CHASE_RACE[] PROGMEM =
+    "Chase Race@Pace,Car length,Gap size,,,;Car 1,Car 2,Car 3;;";
 
 /////////////////////
 //  UserMod Class  //
@@ -98,6 +158,7 @@ class UserFxUsermod : public Usermod {
  public:
   void setup() override {
     strip.addEffect(255, &mode_diffusionfire, _data_FX_MODE_DIFFUSIONFIRE);
+    strip.addEffect(255, &mode_chase_race, _data_FX_MODE_CHASE_RACE);
 
     ////////////////////////////////////////
     //  add your effect function(s) here  //

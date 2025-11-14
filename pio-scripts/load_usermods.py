@@ -5,8 +5,7 @@ from click import secho
 from SCons.Script import Exit
 from platformio.builder.tools.piolib import LibBuilderBase
 
-project_dir = Path(env["PROJECT_DIR"]).resolve()
-usermod_dir = (project_dir / "usermods").resolve()
+usermod_dir = Path(env["PROJECT_DIR"]).resolve() / "usermods"
 
 # Utility functions
 def find_usermod(mod: str) -> Path:
@@ -29,8 +28,7 @@ def find_usermod(mod: str) -> Path:
 def is_wled_module(dep: LibBuilderBase) -> bool:
   """Returns true if the specified library is a wled module
   """
-  dep_root = Path(dep.src_dir).resolve()
-  return usermod_dir in dep_root.parents or str(dep.name).startswith("wled-")
+  return usermod_dir in Path(dep.src_dir).parents or str(dep.name).startswith("wled-")
 
 ## Script starts here
 # Process usermod option
